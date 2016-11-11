@@ -7,6 +7,7 @@ import (
 )
 
 func main() {
+	flag.Parse()
 	args := flag.Args()
 	if len(args) != 3 {
 		args = []string{"127.0.0.1", "31001", "0000000000000000"}
