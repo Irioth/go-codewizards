@@ -13,6 +13,15 @@ type World struct {
 	Trees         []*Tree
 }
 
+func (w *World) GetMyPlayer() *Player {
+	for _, player := range w.Players {
+		if player.Me {
+			return player
+		}
+	}
+	return nil
+}
+
 type Tree struct {
 	LivingUnit
 }
