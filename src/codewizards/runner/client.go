@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/binary"
 	"errors"
-	. "github.com/Irioth/go-codewizards"
+	. "codewizards"
 	"net"
 )
 

@@ -1,11 +1,15 @@
 package main
 
 import (
-	. "github.com/Irioth/go-codewizards"
-	_ "log"
+	. "codewizards"
+	"codewizards/runner"
 	"math"
 	"math/rand"
 )
+
+func main() {
+	runner.Start(NewQuick)
+}
 
 const (
 	WayPointsRadius = 100.0
@@ -64,18 +68,18 @@ func (c *Context) initializeTick(me *Wizard, world *World, game *Game, move *Mov
 	c.move = move
 }
 
-type MyStrategy struct {
+type QuickStrategy struct {
 	Context
 	random      *rand.Rand
 	waypoints   []point
 	rewaypoints []point
 }
 
-func New() Strategy {
-	return &MyStrategy{}
+func NewQuick() Strategy {
+	return &QuickStrategy{}
 }
 
-func (s *MyStrategy) Move(me *Wizard, world *World, game *Game, move *Move) {
+func (s *QuickStrategy) Move(me *Wizard, world *World, game *Game, move *Move) {
 	s.initializeStrategy(me, game)
 	s.initializeTick(me, world, game, move)
 
@@ -112,7 +116,7 @@ func (s *MyStrategy) Move(me *Wizard, world *World, game *Game, move *Move) {
 	s.goTo(s.nextWaypoint())
 }
 
-func (s *MyStrategy) initializeStrategy(me *Wizard, game *Game) {
+func (s *QuickStrategy) initializeStrategy(me *Wizard, game *Game) {
 	if s.random == nil {
 		s.random = rand.New(rand.NewSource(game.RandomSeed))
 		switch me.Id {
@@ -166,15 +170,15 @@ func getNearestTarget(me *Wizard, world *World) *LivingUnit {
 	return nearestTarget
 }
 
-func (s *MyStrategy) nextWaypoint() point {
+func (s *QuickStrategy) nextWaypoint() point {
 	return s.findNextWaypoint(s.waypoints)
 }
 
-func (s *MyStrategy) previousWaypoint() point {
+func (s *QuickStrategy) previousWaypoint() point {
 	return s.findNextWaypoint(s.rewaypoints)
 }
 
-func (s *MyStrategy) findNextWaypoint(waypoints []point) point {
+func (s *QuickStrategy) findNextWaypoint(waypoints []point) point {
 	last := waypoints[len(waypoints)-1]
 	for i, p := range waypoints[:len(waypoints)-1] {
 		if p.Distance(s.me.X, s.me.Y) <= 100 {
@@ -188,7 +192,7 @@ func (s *MyStrategy) findNextWaypoint(waypoints []point) point {
 	return last
 }
 
-func (s *MyStrategy) goTo(p point) {
+func (s *QuickStrategy) goTo(p point) {
 	angle := s.me.GetAngleTo(p.x, p.y)
 
 	s.move.Turn = angle
