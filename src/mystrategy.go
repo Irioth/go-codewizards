@@ -1,4 +1,4 @@
-package mystrategy
+package main
 
 import (
 	. "codewizards"
