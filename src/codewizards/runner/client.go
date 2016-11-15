@@ -2,9 +2,9 @@ package runner
 
 import (
 	"bufio"
+	. "codewizards"
 	"encoding/binary"
 	"errors"
-	. "codewizards"
 	"net"
 )
 

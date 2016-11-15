@@ -1,8 +1,8 @@
 package runner
 
 import (
-	"flag"
 	. "codewizards"
+	"flag"
 )
 
 type Runner struct {
