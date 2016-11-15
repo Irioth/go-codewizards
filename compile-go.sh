@@ -1,1 +1,1 @@
-GOPATH=`pwd` go build -o MyStrategy src/entrypoint.go 2>compilation.log
+cd src; GOPATH=`pwd`/.. go build -o ../MyStrategy 2>../compilation.log
