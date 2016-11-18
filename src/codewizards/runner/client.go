@@ -363,6 +363,9 @@ func (c *Client) readStatuses() []*Status {
 }
 
 func (c *Client) readStatus() *Status {
+	if !c.readBool() {
+		return nil
+	}
 	return &Status{
 		Id:                     c.readInt64(),
 		Type:                   StatusType(c.readByte()),
