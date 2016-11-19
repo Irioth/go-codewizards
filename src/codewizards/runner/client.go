@@ -18,10 +18,16 @@ type PlayerContext struct {
 }
 
 type Client struct {
-	conn          net.Conn
-	w             *bufio.Writer
-	r             *bufio.Reader
-	previousTrees []*Tree
+	conn net.Conn
+	w    *bufio.Writer
+	r    *bufio.Reader
+
+	previousPlayers   []*Player
+	previousBuildings []*Building
+	previousTrees     []*Tree
+
+	previousPlayerById map[int64]*Player
+	prevoiusUnitById   map[int64]interface{}
 }
 
 type MessageType int
@@ -42,7 +48,10 @@ func NewClient(addr string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Client{conn, bufio.NewWriter(conn), bufio.NewReader(conn), nil}, nil
+	return &Client{conn, bufio.NewWriter(conn), bufio.NewReader(conn),
+		nil, nil, nil, // previous
+		make(map[int64]*Player), make(map[int64]interface{}), // previousById
+	}, nil
 }
 
 func (c *Client) Close() error {
@@ -57,7 +66,7 @@ func (c *Client) WriteToken(token string) {
 
 func (c *Client) WriteProtocolVersion() {
 	c.writeOpcode(Message_ProtoVersion)
-	c.writeInt(1)
+	c.writeInt(3)
 	c.flush()
 }
 
@@ -131,24 +140,34 @@ func (c *Client) readWorld() *World {
 
 func (c *Client) readPlayers() []*Player {
 	l := c.readInt()
+	if l < 0 {
+		return c.previousPlayers
+	}
 	r := make([]*Player, l)
 	for i := range r {
 		r[i] = c.readPlayer()
 	}
+	c.previousPlayers = r
 	return r
 }
 
 func (c *Client) readPlayer() *Player {
-	if !c.readBool() {
+	switch c.readByte() {
+	case 0:
 		return nil
-	}
-	return &Player{
-		Id:              c.readInt64(),
-		Me:              c.readBool(),
-		Name:            c.readString(),
-		StrategyCrashed: c.readBool(),
-		Score:           c.readInt(),
-		Faction:         Faction(c.readByte()),
+	case 100:
+		return c.previousPlayerById[c.readInt64()]
+	default:
+		p := &Player{
+			Id:              c.readInt64(),
+			Me:              c.readBool(),
+			Name:            c.readString(),
+			StrategyCrashed: c.readBool(),
+			Score:           c.readInt(),
+			Faction:         Faction(c.readByte()),
+		}
+		c.previousPlayerById[p.Id] = p
+		return p
 	}
 }
 
@@ -162,40 +181,56 @@ func (c *Client) readMinions() []*Minion {
 }
 
 func (c *Client) readMinion() *Minion {
-	if !c.readBool() {
+	switch c.readByte() {
+	case 0:
 		return nil
-	}
-	return &Minion{
-		LivingUnit:                   c.readLivingUnit(),
-		Type:                         MinionType(c.readByte()),
-		VisionRange:                  c.readFloat64(),
-		Damage:                       c.readInt(),
-		CooldownTicks:                c.readInt(),
-		RemainingActionCooldownTicks: c.readInt(),
+	case 100:
+		return c.prevoiusUnitById[c.readInt64()].(*Minion)
+	default:
+		m := &Minion{
+			LivingUnit:                   c.readLivingUnit(),
+			Type:                         MinionType(c.readByte()),
+			VisionRange:                  c.readFloat64(),
+			Damage:                       c.readInt(),
+			CooldownTicks:                c.readInt(),
+			RemainingActionCooldownTicks: c.readInt(),
+		}
+		c.prevoiusUnitById[m.Id] = m
+		return m
 	}
 }
 
 func (c *Client) readBuildings() []*Building {
 	l := c.readInt()
+	if l < 0 {
+		return c.previousBuildings
+	}
 	r := make([]*Building, l)
 	for i := range r {
 		r[i] = c.readBuilding()
 	}
+	c.previousBuildings = r
 	return r
 }
 
 func (c *Client) readBuilding() *Building {
-	if !c.readBool() {
+	switch c.readByte() {
+	case 0:
 		return nil
-	}
-	return &Building{
-		LivingUnit:                   c.readLivingUnit(),
-		Type:                         BuildingType(c.readByte()),
-		VisionRange:                  c.readFloat64(),
-		AttackRange:                  c.readFloat64(),
-		Damage:                       c.readInt(),
-		CooldownTicks:                c.readInt(),
-		RemainingActionCooldownTicks: c.readInt(),
+	case 100:
+		return c.prevoiusUnitById[c.readInt64()].(*Building)
+	default:
+		b := &Building{
+			LivingUnit:                   c.readLivingUnit(),
+			Type:                         BuildingType(c.readByte()),
+			VisionRange:                  c.readFloat64(),
+			AttackRange:                  c.readFloat64(),
+			Damage:                       c.readInt(),
+			CooldownTicks:                c.readInt(),
+			RemainingActionCooldownTicks: c.readInt(),
+		}
+		c.prevoiusUnitById[b.Id] = b
+		return b
 	}
 }
 
@@ -213,11 +248,17 @@ func (c *Client) readTrees() []*Tree {
 }
 
 func (c *Client) readTree() *Tree {
-	if !c.readBool() {
+	switch c.readByte() {
+	case 0:
 		return nil
-	}
-	return &Tree{
-		LivingUnit: c.readLivingUnit(),
+	case 100:
+		return c.prevoiusUnitById[c.readInt64()].(*Tree)
+	default:
+		t := &Tree{
+			LivingUnit: c.readLivingUnit(),
+		}
+		c.prevoiusUnitById[t.Id] = t
+		return t
 	}
 }
 
